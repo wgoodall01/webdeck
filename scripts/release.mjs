@@ -1,9 +1,10 @@
-// `pnpm release vX.Y.Z`: bump the Homebrew cask, commit "Release X.Y.Z", and
+// `pnpm release vX.Y.Z`: bump package.json and the Homebrew cask, commit "Release X.Y.Z", and
 // tag it. Pushing the tag is left to you; it's what starts the release build.
 import { execFileSync } from "node:child_process"
 import { readFileSync, writeFileSync } from "node:fs"
 
 const CASK = "Casks/webdeck.rb"
+const PACKAGE = "package.json"
 
 function git(...args) {
   return execFileSync("git", args, { encoding: "utf8" }).trim()
@@ -12,6 +13,13 @@ function git(...args) {
 function fail(message) {
   console.error(`release: ${message}`)
   process.exit(1)
+}
+
+// Rewrite the first line matching `pattern` in place, keeping the file's formatting.
+function bump(file, pattern, replacement) {
+  const text = readFileSync(file, "utf8")
+  if (!pattern.test(text)) fail(`no version line found in ${file}`)
+  writeFileSync(file, text.replace(pattern, replacement))
 }
 
 const tag = process.argv[2]
@@ -26,14 +34,10 @@ if (branch !== "main") fail(`on branch '${branch}', not main`)
 if (git("status", "--porcelain")) fail("working tree is dirty")
 if (git("tag", "--list", tag)) fail(`tag ${tag} already exists`)
 
-const cask = readFileSync(CASK, "utf8")
-const bumped = cask.replace(/^(\s*version )"[^"]*"$/m, `$1"${version}"`)
-if (bumped === cask && !cask.includes(`version "${version}"`)) {
-  fail(`no version line found in ${CASK}`)
-}
-writeFileSync(CASK, bumped)
+bump(PACKAGE, /^(  "version": )"[^"]*"/m, `$1"${version}"`)
+bump(CASK, /^(\s*version )"[^"]*"$/m, `$1"${version}"`)
 
-git("add", CASK)
+git("add", PACKAGE, CASK)
 git("commit", "--allow-empty", "-m", `Release ${version}`)
 git("tag", "-a", tag, "-m", `Webdeck ${tag}`)
 

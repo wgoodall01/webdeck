@@ -252,14 +252,14 @@ lit across open and resize, and quits.
   `main` with:
 
   ```sh
-  pnpm release v0.2.0                     # bumps the cask, commits "Release 0.2.0", tags v0.2.0
+  pnpm release v0.2.0                     # bumps versions, commits "Release 0.2.0", tags v0.2.0
   git push --atomic origin main v0.2.0    # it prints this; pushing the tag starts the build
   ```
 
   It builds on native runners (macOS arm64, Windows x64) and publishes a GitHub release with the
   `.dmg`, the zipped `.app`, the `.msi`, and the portable `.exe`. File names don't include the version,
   so the `releases/latest/download/…` links above always point at the newest build. The version
-  comes from the tag (`package.json` needn't be bumped), and suffixed tags like `v0.2.0-beta.1`
+  comes from the tag (`pnpm release` also writes it into `package.json`), and suffixed tags like `v0.2.0-beta.1`
   publish as prereleases. You can also re-run it for an existing tag from the Actions tab.
 
 - **Signing.** macOS builds are ad-hoc signed with the entitlements Electron needs under the hardened
