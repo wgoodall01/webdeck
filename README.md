@@ -62,7 +62,7 @@ brew tap wgoodall01/webdeck https://github.com/wgoodall01/webdeck
 brew install --cask wgoodall01/webdeck/webdeck
 ```
 
-Upgrade with `brew upgrade --cask --greedy webdeck`, or by re-running the install script.
+Upgrade with `brew upgrade webdeck`, or by re-running the install script.
 
 The builds aren't notarized (macOS) or code-signed (Windows), so if you install from the
 `.dmg`/`.zip` or `.msi`/`.exe` downloaded in a browser, the first launch needs one extra step:
@@ -248,10 +248,12 @@ lit across open and resize, and quits.
 
 - **CI** (`.github/workflows/ci.yml`) runs on every PR and push to `main`: typecheck, oxlint,
   oxfmt, vitest, and a full build.
-- **Release** (`.github/workflows/release.yml`) runs when you push a `v*` tag:
+- **Release** (`.github/workflows/release.yml`) runs when you push a `v*` tag. Cut one from a clean
+  `main` with:
 
   ```sh
-  git tag -a v0.2.0 -m "Webdeck v0.2.0" && git push origin v0.2.0
+  pnpm release v0.2.0                     # bumps the cask, commits "Release 0.2.0", tags v0.2.0
+  git push --atomic origin main v0.2.0    # it prints this; pushing the tag starts the build
   ```
 
   It builds on native runners (macOS arm64, Windows x64) and publishes a GitHub release with the
@@ -265,10 +267,11 @@ lit across open and resize, and quits.
   `mac.identity` in `electron-builder.yml`, and add notarization.
 
 - **Install paths.** `scripts/install.sh` and the Homebrew cask (`Casks/webdeck.rb`) both fetch the
-  zipped `.app` from `releases/latest/download/`, so neither needs updating per release. The script
-  avoids Gatekeeper because curl doesn't quarantine what it downloads; the cask removes Homebrew's
-  quarantine flag in a `postflight`. The cask is `version :latest`, which is why upgrades need
-  `--greedy`.
+  zipped `.app`. The script always takes `releases/latest/download/`; the cask pins the release's
+  version, which `pnpm release` bumps, and skips the checksum since the zip is built after the tag.
+  Until CI finishes, `brew upgrade` for the new version 404s. The script avoids Gatekeeper because
+  curl doesn't quarantine what it downloads; the cask removes Homebrew's quarantine flag in a
+  `postflight`.
 
 ### Packaging notes
 

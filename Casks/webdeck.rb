@@ -3,13 +3,13 @@
 #   brew tap wgoodall01/webdeck https://github.com/wgoodall01/webdeck
 #   brew install --cask wgoodall01/webdeck/webdeck
 #
-# The release assets have stable names, so the cask always installs the latest
-# release; `brew upgrade --cask --greedy` picks up new ones.
+# `pnpm release vX.Y.Z` bumps `version` here in the release commit. There's no
+# checksum: the zip doesn't exist until CI builds the tag.
 cask "webdeck" do
-  version :latest
+  version "0.1.0"
   sha256 :no_check
 
-  url "https://github.com/wgoodall01/webdeck/releases/latest/download/Webdeck-mac-arm64.zip"
+  url "https://github.com/wgoodall01/webdeck/releases/download/v#{version}/Webdeck-mac-arm64.zip"
   name "Webdeck"
   desc "Presenter for Claude Design HTML decks and PDF slides"
   homepage "https://github.com/wgoodall01/webdeck"
