@@ -47,7 +47,8 @@ export type AppState =
 
 export type NavCommand = { type: "goTo"; index: number } | { type: "step"; dir: 1 | -1 }
 
-export interface LaserPoint {
+/** Where the presenter is hovering on the slide, mirrored to the audience as a marker. */
+export interface MarkerPoint {
   x: number
   y: number
 }
@@ -65,13 +66,15 @@ export interface CommandMap {
   "picker:choose": string
   nav: NavCommand
   screen: ScreenMode
-  laser: LaserPoint | null
+  marker: MarkerPoint | null
   "stage:input": StageInput
   "tweaks:set": TweakValues
   "tweaks:reset": void
   "audience:set": Partial<AudienceState>
   /** Drag the sender's window by its content (QuickTime-style); main tracks the cursor. */
   "window:drag": "start" | "move" | "end"
+  /** Show/hide the window controls (macOS traffic lights) while the pointer is active. */
+  "window:controls": boolean
   /** The sender's frame receiver is installed; start streaming to it. */
   "frames:ready": void
 }
@@ -86,7 +89,7 @@ export interface InvokeMap {
 export interface EventMap {
   state: AppState
   thumbnail: ThumbnailEvent
-  laser: LaserPoint | null
+  marker: MarkerPoint | null
   /** CSS cursor for the slide surface, mirrored from the slide page. */
   cursor: string
   /** CPU fallback frame (JPEG) when GPU shared textures are unavailable. */

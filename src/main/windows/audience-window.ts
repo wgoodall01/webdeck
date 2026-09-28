@@ -39,10 +39,11 @@ function fitBounds(display: Display, aspect: number, fraction: number) {
 }
 
 /**
- * The audience-facing window: nothing but the slide. Frameless, locked to the
- * deck's aspect ratio (resizes like QuickTime Player), black letterbox when
- * fullscreen on a display of a different shape. Built to be window-shared on
- * a call or fullscreened onto a projector.
+ * The audience-facing window: nothing but the slide. Chromeless, locked to the
+ * deck's aspect ratio, and dragged by its content, like QuickTime Player. On
+ * macOS the traffic lights show only while the pointer is active over it.
+ * Black letterbox when fullscreen on a display of a different shape. Built to
+ * be window-shared on a call or fullscreened onto a projector.
  */
 export class AudienceWindow {
   readonly win: BrowserWindow
@@ -52,10 +53,16 @@ export class AudienceWindow {
     const display = preferredDisplay()
     this.displayId = display.id
     const onPrimary = display.id === screen.getPrimaryDisplay().id
+    const mac = process.platform === "darwin"
     this.win = new BrowserWindow({
       ...fitBounds(display, opts.aspect, onPrimary ? 0.5 : 0.8),
       title: opts.title,
-      frame: false,
+      // macOS: a hidden title bar keeps the native traffic lights, which are
+      // shown only while the pointer is active over the window. Elsewhere:
+      // fully frameless.
+      ...(mac
+        ? { titleBarStyle: "hidden" as const, trafficLightPosition: { x: 12, y: 12 } }
+        : { frame: false }),
       show: false,
       backgroundColor: "#000000",
       hasShadow: true,
@@ -70,6 +77,7 @@ export class AudienceWindow {
       },
     })
     this.win.setAspectRatio(opts.aspect)
+    if (mac) this.win.setWindowButtonVisibility(false)
     this.win.once("ready-to-show", () => this.win.showInactive())
     // Keep the deck title (not the page's) for window-share pickers.
     this.win.on("page-title-updated", (e) => e.preventDefault())

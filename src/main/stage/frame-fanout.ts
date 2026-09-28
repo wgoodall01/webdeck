@@ -8,6 +8,11 @@
  * most one pending frame, replaced by newer ones, so a slow window drops
  * frames instead of exhausting Chromium's small OSR texture pool, and always
  * ends on the latest image.
+ *
+ * The fanout also keeps the latest frame and replays it to every sink that
+ * attaches (or re-attaches after resizing its canvas). Offscreen rendering only
+ * paints when the page changes, so without this a new window would stay black
+ * until the next slide change.
  */
 
 export interface Frame {
@@ -41,6 +46,7 @@ interface SinkSlot<F extends Frame> {
 
 export class FrameFanout<F extends Frame> {
   private slots = new Map<number, SinkSlot<F>>()
+  private latest: Shared<F> | null = null
   private onError: (sinkId: number, err: unknown) => void
 
   constructor(opts: { onError?: (sinkId: number, err: unknown) => void } = {}) {
@@ -53,7 +59,9 @@ export class FrameFanout<F extends Frame> {
 
   add(sink: FrameSink<F>): void {
     this.remove(sink.id)
-    this.slots.set(sink.id, { sink, busy: false, pending: null })
+    const slot: SinkSlot<F> = { sink, busy: false, pending: null }
+    this.slots.set(sink.id, slot)
+    if (this.latest) this.send(slot, this.latest.retain())
   }
 
   remove(sinkId: number): void {
@@ -66,7 +74,7 @@ export class FrameFanout<F extends Frame> {
 
   /** Publish a frame. Ownership of `frame` passes to the fanout. */
   push(frame: F): void {
-    const shared = new Shared(frame).retain() // held for the duration of push()
+    const shared = new Shared(frame).retain() // held as `latest`
     for (const slot of this.slots.values()) {
       shared.retain()
       if (slot.busy) {
@@ -76,11 +84,15 @@ export class FrameFanout<F extends Frame> {
         this.send(slot, shared)
       }
     }
-    shared.release()
+    this.latest?.release()
+    this.latest = shared
   }
 
+  /** Drop every sink and the retained latest frame. */
   clear(): void {
     for (const id of this.slots.keys()) this.remove(id)
+    this.latest?.release()
+    this.latest = null
   }
 
   private send(slot: SinkSlot<F>, shared: Shared<F>): void {

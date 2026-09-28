@@ -33,10 +33,31 @@ function manualSink(id: number) {
 const tick = () => new Promise((r) => setTimeout(r, 0))
 
 describe("FrameFanout", () => {
-  it("releases a frame immediately when there are no sinks", () => {
+  it("keeps only the latest frame when there are no sinks", () => {
     const fan = new FrameFanout<TestFrame>()
-    const f = new TestFrame(1)
+    const f1 = new TestFrame(1)
+    const f2 = new TestFrame(2)
+    fan.push(f1)
+    expect(f1.released).toBe(0) // retained as latest
+    fan.push(f2)
+    expect(f1.released).toBe(1)
+    fan.clear()
+    expect(f2.released).toBe(1)
+  })
+
+  it("replays the latest frame to a sink that attaches later", async () => {
+    const fan = new FrameFanout<TestFrame>()
+    const f = new TestFrame(7)
     fan.push(f)
+    const s = manualSink(1)
+    fan.add(s.sink)
+    expect(s.received).toEqual([7])
+    await s.flush()
+    fan.add(s.sink) // re-attach (e.g. after a canvas resize) replays again
+    expect(s.received).toEqual([7, 7])
+    await s.flush()
+    expect(f.released).toBe(0)
+    fan.clear()
     expect(f.released).toBe(1)
   })
 
@@ -51,8 +72,9 @@ describe("FrameFanout", () => {
     expect(a.received).toEqual([1])
     expect(b.received).toEqual([1])
     await a.flush()
-    expect(f.released).toBe(0)
     await b.flush()
+    expect(f.released).toBe(0) // still the latest
+    fan.push(new TestFrame(2))
     expect(f.released).toBe(1)
   })
 
@@ -70,6 +92,7 @@ describe("FrameFanout", () => {
     expect(frames[0]!.released).toBe(1)
     expect(s.received).toEqual([1, 4])
     await s.flush()
+    fan.clear()
     expect(frames.every((f) => f.released === 1)).toBe(true)
   })
 
@@ -95,10 +118,12 @@ describe("FrameFanout", () => {
     fan.push(f1)
     fan.push(f2)
     fan.remove(1)
-    expect(f2.released).toBe(1)
+    expect(f2.released).toBe(0) // pending ref dropped; still held as latest
     await s.flush() // the in-flight delivery completes after removal
     expect(f1.released).toBe(1)
     expect(s.received).toEqual([1])
+    fan.clear()
+    expect(f2.released).toBe(1)
   })
 
   it("survives a failing sink and reports it", async () => {
@@ -110,6 +135,7 @@ describe("FrameFanout", () => {
     await tick()
     await tick()
     expect(errors).toEqual([7])
+    fan.clear()
     expect(f.released).toBe(1)
   })
 })

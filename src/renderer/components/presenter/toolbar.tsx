@@ -3,15 +3,14 @@ import {
   ArrowsOutIcon,
   CaretLeftIcon,
   CaretRightIcon,
-  CircleHalfIcon,
-  CursorClickIcon,
+  CircleIcon,
   FolderOpenIcon,
   MonitorIcon,
   SquareIcon,
 } from "@phosphor-icons/react"
 
-import type { ScreenMode } from "@shared/ipc"
 import { stepIndex } from "@shared/deck"
+import type { ScreenMode } from "@shared/ipc"
 
 import { NoDrag, TitleBar } from "@/components/title-bar"
 import { Button } from "@/components/ui/button"
@@ -50,79 +49,14 @@ function Tip({
   )
 }
 
-export function PresenterToolbar({
-  state,
-  laser,
-  onLaser,
-}: {
-  state: PresentingState
-  laser: boolean
-  onLaser: (v: boolean) => void
-}) {
-  const { deck, index, screen, audience, displays } = state
+/** Window title bar: deck title, where the audience window is, open. */
+export function PresenterTitleBar({ state }: { state: PresentingState }) {
+  const { deck, audience, displays } = state
   const api = bridge()
-  const setScreen = (mode: ScreenMode) => api.send("screen", screen === mode ? "normal" : mode)
-  const visible = deck.slides.filter((s) => !s.skipped).length
-  const position = deck.slides.slice(0, index + 1).filter((s) => !s.skipped).length
-
   return (
     <TitleBar>
-      <div className="flex min-w-0 flex-1 items-center gap-3">
-        <span className="truncate text-sm font-medium">{deck.title}</span>
-        <span className="shrink-0 font-mono text-xs text-muted-foreground tabular-nums">
-          {deck.slides[index]?.skipped ? "–" : position} / {visible}
-        </span>
-      </div>
-
+      <span className="min-w-0 flex-1 truncate text-sm font-medium">{deck.title}</span>
       <NoDrag>
-        <Tip label="Previous" keys="←">
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            disabled={stepIndex(deck.slides, index, -1) === null}
-            onClick={() => api.send("nav", { type: "step", dir: -1 })}
-          >
-            <CaretLeftIcon />
-          </Button>
-        </Tip>
-        <Tip label="Next" keys="→">
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            disabled={stepIndex(deck.slides, index, 1) === null}
-            onClick={() => api.send("nav", { type: "step", dir: 1 })}
-          >
-            <CaretRightIcon />
-          </Button>
-        </Tip>
-
-        <Separator orientation="vertical" className="mx-1 h-5" />
-
-        <Tip label="Black screen" keys="B">
-          <Toggle size="sm" pressed={screen === "black"} onPressedChange={() => setScreen("black")}>
-            <SquareIcon weight="fill" />
-          </Toggle>
-        </Tip>
-        <Tip label="White screen" keys="W">
-          <Toggle size="sm" pressed={screen === "white"} onPressedChange={() => setScreen("white")}>
-            <CircleHalfIcon />
-          </Toggle>
-        </Tip>
-        <Tip label="Laser pointer" keys="L">
-          <Toggle
-            size="sm"
-            pressed={laser}
-            onPressedChange={(v) => {
-              if (!v) api.send("laser", null)
-              onLaser(v)
-            }}
-          >
-            <CursorClickIcon />
-          </Toggle>
-        </Tip>
-
-        <Separator orientation="vertical" className="mx-1 h-5" />
-
         {audience.open ? (
           <>
             {displays.length > 1 && (
@@ -168,7 +102,6 @@ export function PresenterToolbar({
             Show audience window
           </Button>
         )}
-
         <Tip label="Open another deck" keys="⌘O">
           <Button variant="ghost" size="icon-sm" onClick={() => api.send("app:open")}>
             <FolderOpenIcon />
@@ -176,5 +109,68 @@ export function PresenterToolbar({
         </Tip>
       </NoDrag>
     </TitleBar>
+  )
+}
+
+/** Slide controls, directly under the preview. */
+export function SlideControls({
+  state,
+  markerOn,
+  onMarker,
+}: {
+  state: PresentingState
+  markerOn: boolean
+  onMarker: (on: boolean) => void
+}) {
+  const { deck, index, screen } = state
+  const api = bridge()
+  const setScreen = (mode: ScreenMode) => api.send("screen", screen === mode ? "normal" : mode)
+  const visible = deck.slides.filter((s) => !s.skipped).length
+  const position = deck.slides.slice(0, index + 1).filter((s) => !s.skipped).length
+
+  return (
+    <div className="flex shrink-0 items-center justify-center gap-1 pt-2.5">
+      <Tip label="Previous" keys="←">
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          disabled={stepIndex(deck.slides, index, -1) === null}
+          onClick={() => api.send("nav", { type: "step", dir: -1 })}
+        >
+          <CaretLeftIcon />
+        </Button>
+      </Tip>
+      <span className="min-w-16 text-center font-mono text-xs text-muted-foreground tabular-nums">
+        {deck.slides[index]?.skipped ? "–" : position} / {visible}
+      </span>
+      <Tip label="Next" keys="→">
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          disabled={stepIndex(deck.slides, index, 1) === null}
+          onClick={() => api.send("nav", { type: "step", dir: 1 })}
+        >
+          <CaretRightIcon />
+        </Button>
+      </Tip>
+
+      <Separator orientation="vertical" className="mx-2 h-5" />
+
+      <Tip label="Black screen" keys="B">
+        <Toggle size="sm" pressed={screen === "black"} onPressedChange={() => setScreen("black")}>
+          <SquareIcon weight="fill" />
+        </Toggle>
+      </Tip>
+      <Tip label="White screen" keys="W">
+        <Toggle size="sm" pressed={screen === "white"} onPressedChange={() => setScreen("white")}>
+          <SquareIcon />
+        </Toggle>
+      </Tip>
+      <Tip label="Show pointer to audience" keys="L">
+        <Toggle size="sm" pressed={markerOn} onPressedChange={onMarker}>
+          <CircleIcon weight="fill" />
+        </Toggle>
+      </Tip>
+    </div>
   )
 }

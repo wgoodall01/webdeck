@@ -35,12 +35,18 @@ export class AppController {
       "picker:choose": (id) => void this.choose(id),
       nav: (cmd) => this.session?.nav(cmd),
       screen: (mode) => this.session?.setScreen(mode),
-      laser: (p) => this.session?.laser(p),
+      marker: (p) => this.session?.marker(p),
       "stage:input": (input) => this.session?.input(input),
       "tweaks:set": (values) => this.session?.setTweaks(values),
       "tweaks:reset": () => this.session?.resetTweaks(),
       "audience:set": (patch) => this.session?.setAudience(patch),
       "window:drag": (msg, sender) => handleWindowDrag(sender, msg),
+      "window:controls": (visible, sender) => {
+        const win = BrowserWindow.fromWebContents(sender)
+        if (win && !win.isDestroyed() && process.platform === "darwin") {
+          win.setWindowButtonVisibility(visible || win.isFullScreen())
+        }
+      },
       "frames:ready": (_, sender) => this.session?.addSink(sender),
     }
     bindIpc(this.commands, {
@@ -63,7 +69,7 @@ export class AppController {
   }
 
   /** Run a command as if the presenter sent it (menus, smoke tests). */
-  command<K extends Exclude<keyof CommandMap, "frames:ready" | "window:drag">>(
+  command<K extends Exclude<keyof CommandMap, "frames:ready" | `window:${string}`>>(
     channel: K,
     payload: CommandMap[K],
   ): void {

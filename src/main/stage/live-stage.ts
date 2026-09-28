@@ -126,8 +126,6 @@ export class LiveStage extends EventEmitter<LiveStageEvents> {
       wc.off("did-start-navigation", onNav)
       wc.off("render-process-gone", drop)
     })
-    // A fresh sink has nothing on screen; have the stage repaint.
-    this.host?.invalidate()
   }
 
   dropSink(id: number): void {
@@ -207,10 +205,8 @@ export class LiveStage extends EventEmitter<LiveStageEvents> {
   }
 
   private onTexture(texture: OffscreenSharedTexture): void {
-    if (!this.textures.sinkCount) {
-      texture.release()
-      return
-    }
+    // Imported even with no sinks: the fanout keeps it as the latest frame
+    // for windows that attach later.
     const imported = sharedTexture.importSharedTexture({
       textureInfo: texture.textureInfo,
       allReferencesReleased: () => texture.release(),
@@ -219,7 +215,6 @@ export class LiveStage extends EventEmitter<LiveStageEvents> {
   }
 
   private onBitmap(image: NativeImage): void {
-    if (!this.bitmaps.sinkCount) return
     if (!this.warnedBitmap) {
       this.warnedBitmap = true
       console.warn("[webdeck] GPU shared textures unavailable; falling back to CPU frames")

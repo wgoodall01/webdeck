@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router"
 import { useEffect, useState } from "react"
 
-import type { LaserPoint } from "@shared/ipc"
+import type { MarkerPoint } from "@shared/ipc"
 
 import { SlideSurface } from "@/components/slide-surface"
 import { isTypingTarget, navForKey } from "@/lib/keys"
@@ -13,13 +13,14 @@ const IDLE_MS = 1800
 
 /**
  * The audience window: the slide and nothing else. Drag anywhere to move it
- * (QuickTime-style), double-click for fullscreen; the cursor hides when idle.
+ * (QuickTime-style), double-click for fullscreen. While the pointer is active
+ * the traffic lights show; when idle, they and the cursor hide.
  */
 function Audience() {
   const state = useAppState()
-  const [laser, setLaser] = useState<LaserPoint | null>(null)
+  const [marker, setMarker] = useState<MarkerPoint | null>(null)
   const [active, setActive] = useState(false)
-  useBridgeEvent("laser", setLaser)
+  useBridgeEvent("marker", setMarker)
 
   useEffect(() => {
     document.documentElement.style.background = "#000"
@@ -30,12 +31,23 @@ function Audience() {
       clearTimeout(t)
       t = setTimeout(() => setActive(false), IDLE_MS)
     }
+    const sleep = () => {
+      clearTimeout(t)
+      setActive(false)
+    }
     window.addEventListener("pointermove", wake)
+    document.documentElement.addEventListener("pointerleave", sleep)
+    window.addEventListener("blur", sleep)
     return () => {
       window.removeEventListener("pointermove", wake)
+      document.documentElement.removeEventListener("pointerleave", sleep)
+      window.removeEventListener("blur", sleep)
       clearTimeout(t)
     }
   }, [])
+
+  // Traffic lights follow pointer activity (macOS).
+  useEffect(() => bridge().send("window:controls", active), [active])
 
   const presenting = state.phase === "presenting" ? state : null
 
@@ -73,7 +85,7 @@ function Audience() {
         aspect={deck.width / deck.height}
         screen={screen}
         interactive
-        laser={laser}
+        marker={marker}
         dragsWindow={!audience.fullscreen}
         onDoubleClick={() => bridge().send("audience:set", { fullscreen: !audience.fullscreen })}
       />

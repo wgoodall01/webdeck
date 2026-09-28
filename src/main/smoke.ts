@@ -24,6 +24,34 @@ export async function runSmoke(controller: AppController, outDir: string): Promi
       writeFileSync(join(outDir, `${tag}-${name}.png`), img.toPNG())
     }
   }
+  /** Fraction of non-black pixels: in the audience window, or the presenter's preview area. */
+  const lit = async (w: BrowserWindow) => {
+    const audienceWin = w.webContents.getURL().includes("/audience")
+    const [cw = 0, ch = 0] = w.getContentSize()
+    const rect = audienceWin
+      ? undefined
+      : {
+          x: Math.round(cw * 0.08),
+          y: Math.round(ch * 0.15),
+          width: Math.round(cw * 0.45),
+          height: Math.round(ch * 0.3),
+        }
+    const bmp = (await w.webContents.capturePage(rect)).toBitmap()
+    let on = 0
+    for (let i = 0; i < bmp.length; i += 16) {
+      if ((bmp[i] ?? 0) + (bmp[i + 1] ?? 0) + (bmp[i + 2] ?? 0) > 90) on++
+    }
+    return Math.round((on / (bmp.length / 16)) * 100)
+  }
+  const litReport = async (tag: string) => {
+    const parts: string[] = []
+    for (const w of BrowserWindow.getAllWindows()) {
+      if (!w.isVisible()) continue
+      const name = w.webContents.getURL().includes("/audience") ? "audience" : "preview"
+      parts.push(`${name}=${await lit(w)}%`)
+    }
+    log.push(`lit ${tag}: ${parts.join(" ")}`)
+  }
   const waitFor = async (pred: () => boolean, ms: number) => {
     const end = Date.now() + ms
     while (!pred() && Date.now() < end) await sleep(100)
@@ -36,6 +64,23 @@ export async function runSmoke(controller: AppController, outDir: string): Promi
     }
     await sleep(4000) // let thumbnails trickle in
     await shoot("01-open")
+    await litReport("at open")
+    const wins = BrowserWindow.getAllWindows().filter((w) => w.isVisible())
+    const aud = wins.find((w) => w.webContents.getURL().includes("/audience"))
+    const pres = wins.find((w) => !w.webContents.getURL().includes("/audience"))
+    if (aud) {
+      const b = aud.getBounds()
+      aud.setBounds({ ...b, width: b.width + 240, height: b.height + 135 })
+      await sleep(800)
+      await litReport("after audience resize")
+    }
+    if (pres) {
+      const b = pres.getBounds()
+      pres.setBounds({ ...b, width: b.width - 200, height: b.height - 100 })
+      await sleep(800)
+      await litReport("after presenter resize")
+      await shoot("01a-resized")
+    }
     const s = controller.state()
     if (s.phase === "presenting") {
       log.push(

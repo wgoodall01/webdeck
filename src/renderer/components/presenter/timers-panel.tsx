@@ -61,7 +61,7 @@ export function TimersPanel({ deck, index }: { deck: DeckManifest; index: number
           />
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="xs" onClick={toggle}>
+          <Button variant="outline" size="sm" className="px-4" onClick={toggle}>
             {running ? (
               <PauseIcon data-icon="inline-start" />
             ) : (
@@ -107,17 +107,15 @@ function Timer({
   onReset: () => void
 }) {
   return (
-    <div className="group">
+    <button
+      type="button"
+      onClick={onReset}
+      title={`Reset ${label.toLowerCase()}`}
+      className="group -m-2 rounded-lg p-2 text-left transition-colors outline-none hover:bg-muted/60 focus-visible:ring-2 focus-visible:ring-ring active:bg-muted"
+    >
       <div className="flex items-center gap-1 text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
         {label}
-        <button
-          type="button"
-          onClick={onReset}
-          title={`Reset ${label.toLowerCase()}`}
-          className="rounded p-0.5 opacity-0 transition-opacity group-hover:opacity-100 hover:text-foreground focus-visible:opacity-100"
-        >
-          <ArrowCounterClockwiseIcon className="size-3" />
-        </button>
+        <ArrowCounterClockwiseIcon className="size-3 opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100" />
       </div>
       <div
         className={
@@ -128,6 +126,6 @@ function Timer({
       >
         {value}
       </div>
-    </div>
+    </button>
   )
 }

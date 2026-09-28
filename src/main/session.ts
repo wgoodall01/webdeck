@@ -7,7 +7,7 @@ import type {
   AudienceState,
   DisplayInfo,
   EventMap,
-  LaserPoint,
+  MarkerPoint,
   NavCommand,
   ScreenMode,
   ThumbnailEvent,
@@ -160,9 +160,9 @@ export class PresentationSession {
     this.host.changed()
   }
 
-  laser(point: LaserPoint | null): void {
+  marker(point: MarkerPoint | null): void {
     const wc = this.audienceContents
-    if (wc && !wc.isDestroyed()) wc.send(IPC_PREFIX + "laser", point)
+    if (wc && !wc.isDestroyed()) wc.send(IPC_PREFIX + "marker", point)
   }
 
   input(input: StageInput): void {
