@@ -3,8 +3,8 @@ import {
   ArrowsOutIcon,
   CaretLeftIcon,
   CaretRightIcon,
-  CircleIcon,
   FolderOpenIcon,
+  HandTapIcon,
   MonitorIcon,
   SquareIcon,
 } from "@phosphor-icons/react"
@@ -168,7 +168,7 @@ export function SlideControls({
       </Tip>
       <Tip label="Show pointer to audience" keys="L">
         <Toggle size="sm" pressed={markerOn} onPressedChange={onMarker}>
-          <CircleIcon weight="fill" />
+          <HandTapIcon />
         </Toggle>
       </Tip>
     </div>

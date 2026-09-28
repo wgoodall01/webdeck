@@ -18,7 +18,7 @@ export function TitleBar({
     <header
       className={cn(
         "flex h-11 shrink-0 items-center gap-2 border-b border-border/60 px-3 select-none",
-        mac ? "pl-20" : "pr-36",
+        mac ? "pl-24" : "pr-36",
         className,
       )}
       style={{ WebkitAppRegion: "drag" } as React.CSSProperties}

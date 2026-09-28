@@ -77,7 +77,13 @@ export class AudienceWindow {
       },
     })
     this.win.setAspectRatio(opts.aspect)
-    if (mac) this.win.setWindowButtonVisibility(false)
+    if (mac) {
+      this.win.setWindowButtonVisibility(false)
+      // Fullscreen: always let macOS reveal the title bar when the cursor
+      // reaches the top edge, or there's no obvious way back out.
+      this.win.on("enter-full-screen", () => this.win.setWindowButtonVisibility(true))
+      this.win.on("leave-full-screen", () => this.win.setWindowButtonVisibility(false))
+    }
     this.win.once("ready-to-show", () => this.win.showInactive())
     // Keep the deck title (not the page's) for window-share pickers.
     this.win.on("page-title-updated", (e) => e.preventDefault())

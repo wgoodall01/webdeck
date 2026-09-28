@@ -24,7 +24,9 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <HeadContent />
       </head>
       <body>
-        <TooltipProvider delay={400}>{children}</TooltipProvider>
+        <TooltipProvider delay={0} closeDelay={0}>
+          {children}
+        </TooltipProvider>
         <Scripts />
       </body>
     </html>
