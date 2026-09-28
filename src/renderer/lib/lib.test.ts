@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest"
 
 import { navForKey } from "./keys"
+import { notePreview } from "./markdown"
 import { formatDuration, stopwatch } from "./time"
 
 describe("formatDuration", () => {
@@ -41,5 +42,18 @@ describe("navForKey", () => {
     expect(navForKey(" ", true)).toEqual({ type: "step", dir: -1 })
     expect(navForKey("Home")).toEqual({ type: "goTo", index: 0 })
     expect(navForKey("x")).toBeNull()
+  })
+})
+
+describe("notePreview", () => {
+  it("strips Markdown down to plain text", () => {
+    expect(notePreview("Sunset is at **4:12pm**, mostly *after* dark.")).toBe(
+      "Sunset is at 4:12pm, mostly after dark.",
+    )
+    expect(notePreview("\n\n- Use `pnpm dev` and [the docs](https://x.y)")).toBe(
+      "Use pnpm dev and the docs",
+    )
+    expect(notePreview("## Heading\nbody")).toBe("Heading")
+    expect(notePreview("")).toBe("")
   })
 })

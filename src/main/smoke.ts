@@ -58,6 +58,16 @@ export async function runSmoke(controller: AppController, outDir: string): Promi
     return pred()
   }
   try {
+    // A multi-deck archive opens the picker: shoot it once covers render, then pick the first.
+    if (await waitFor(() => ["picking", "presenting"].includes(controller.state().phase), 60_000)) {
+      const st = controller.state()
+      if (st.phase === "picking") {
+        await sleep(6000)
+        await shoot("00-picker")
+        const first = st.candidates[0]
+        if (first) controller.command("picker:choose", first.id)
+      }
+    }
     if (!(await waitFor(() => controller.state().phase === "presenting", 60_000))) {
       log.push(`never presented: ${JSON.stringify(controller.state())}`)
       return
@@ -91,8 +101,7 @@ export async function runSmoke(controller: AppController, outDir: string): Promi
     if (s.phase === "presenting" && s.tweaks) {
       const patch: Record<string, string> = {}
       for (const f of s.tweaks.schema.fields) {
-        if (f.control.kind === "color") patch[f.key] = "#3926d3"
-        else if (f.control.kind === "text") patch[f.key] = "Tweaked live"
+        if (f.control.kind === "color") patch[f.key] = "#7fb2ff"
       }
       controller.command("tweaks:set", patch)
       await sleep(2500)
@@ -104,6 +113,16 @@ export async function runSmoke(controller: AppController, outDir: string): Promi
       await sleep(1500)
       const st = controller.state()
       log.push(`after step ${n}: index=${st.phase === "presenting" ? st.index : "?"}`)
+    }
+    // Hover the presenter preview: the marker shows there and on the audience window.
+    if (pres) {
+      const [cw = 0, ch = 0] = pres.getContentSize()
+      pres.webContents.sendInputEvent({
+        type: "mouseMove",
+        x: Math.round(cw * 0.47),
+        y: Math.round(ch * 0.4),
+      })
+      await sleep(400)
     }
     await shoot("02-stepped")
     const audience = BrowserWindow.getAllWindows().find((w) =>

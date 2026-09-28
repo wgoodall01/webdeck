@@ -41,7 +41,8 @@ mac:
   # unsigned app at all. Set CSC_LINK / CSC_KEY_PASSWORD (and override
   # identity) to sign with a Developer ID instead.
   identity: "-"
-  artifactName: ${productName}-${version}-mac-${arch}.${ext}
+  # No version in file names, so releases/latest/download/<name> links stay stable.
+  artifactName: ${productName}-mac-${arch}.${ext}
 
 dmg:
   # The standard drag-to-Applications window.
@@ -67,10 +68,10 @@ win:
       arch: [x64]
 
 portable:
-  artifactName: ${productName}-${version}-win-${arch}-portable.${ext}
+  artifactName: ${productName}-win-${arch}-portable.${ext}
 
 msi:
-  artifactName: ${productName}-${version}-win-${arch}.${ext}
+  artifactName: ${productName}-win-${arch}.${ext}
   oneClick: false
   perMachine: false
   createDesktopShortcut: true

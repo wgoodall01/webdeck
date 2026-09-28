@@ -4,6 +4,7 @@ import { cn } from "cn"
 
 import type { DeckManifest, SlideInfo } from "@shared/deck"
 
+import { notePreview } from "@/lib/markdown"
 import { bridge, useThumbnails } from "@/lib/webdeck"
 
 /**
@@ -50,7 +51,7 @@ const SlideRow = memo(function SlideRow({
   thumb: string | undefined
   aspect: number
 }) {
-  const firstNote = slide.notes.split("\n").find((l) => l.trim()) ?? ""
+  const firstNote = notePreview(slide.notes)
   return (
     <li data-slide={slide.index}>
       <button
