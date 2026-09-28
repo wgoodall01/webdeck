@@ -1,0 +1,37 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["typescript", "react", "react-perf", "unicorn", "import", "vitest", "oxc"],
+  "categories": {
+    "correctness": "error",
+    "suspicious": "warn",
+    "perf": "warn"
+  },
+  "env": {
+    "browser": true,
+    "node": true,
+    "es2024": true
+  },
+  "rules": {
+    "react/react-in-jsx-scope": "off",
+    "react-perf/jsx-no-new-object-as-prop": "off",
+    "react-perf/jsx-no-new-array-as-prop": "off",
+    "react-perf/jsx-no-new-function-as-prop": "off",
+    "react-perf/jsx-no-jsx-as-prop": "off",
+    "import/no-unassigned-import": "off",
+    "unicorn/no-array-sort": "off",
+    "no-underscore-dangle": "off",
+    "no-await-in-loop": "off",
+    "unicorn/consistent-function-scoping": "off",
+    "unicorn/require-module-specifiers": "off"
+  },
+  "ignorePatterns": ["src/renderer/routeTree.gen.ts", "out/**", "dist/**"],
+  "overrides": [
+    {
+      "files": ["src/renderer/components/ui/**"],
+      "rules": {
+        "no-shadow": "off",
+        "react/jsx-no-constructed-context-values": "off"
+      }
+    }
+  ]
+}

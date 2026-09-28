@@ -1,0 +1,53 @@
+appId: com.allgoodhq.webdeck
+productName: Webdeck
+copyright: Copyright © 2026 William Goodall
+
+directories:
+  output: dist
+  buildResources: build
+
+# Only the built app and runtime deps ship; the renderer's prerender server
+# bundle is a build artifact, not something the app loads.
+files:
+  - out/**
+  - "!out/renderer/server/**"
+  - "!out/smoke/**"
+  - package.json
+
+asar: true
+
+fileAssociations:
+  - ext: zip
+    name: Claude Design export
+    role: Viewer
+    rank: Alternate
+  - ext: pdf
+    name: PDF slides
+    role: Viewer
+    rank: Alternate
+
+mac:
+  target:
+    - target: dmg
+      arch: [arm64]
+    - target: zip
+      arch: [arm64]
+  category: public.app-category.productivity
+  hardenedRuntime: true
+  # Unsigned local builds; set CSC_LINK / CSC_KEY_PASSWORD to sign.
+  identity: null
+
+win:
+  target:
+    # The zip cross-builds anywhere. The NSIS installer needs makensis, which
+    # electron-builder ships as x86_64 only: on Apple silicon that means
+    # Rosetta (or build on Windows/CI).
+    - target: zip
+      arch: [x64]
+    - target: nsis
+      arch: [x64]
+
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
