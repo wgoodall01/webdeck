@@ -73,15 +73,20 @@ jobs:
       - name: Package
         shell: bash
         env:
-          # Optional Developer ID signing: add these as repo secrets and set
+          # Optional Developer ID signing: add these repo secrets and set
           # mac.identity accordingly. Without them the app is ad-hoc signed.
-          CSC_LINK: ${{ secrets.CSC_LINK }}
-          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+          SIGNING_CERT: ${{ secrets.CSC_LINK }}
+          SIGNING_CERT_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
           CSC_IDENTITY_AUTO_DISCOVERY: "false"
-        run: >
-          pnpm exec electron-builder ${{ matrix.args }}
-          --publish never
-          -c.extraMetadata.version=${{ steps.version.outputs.version }}
+        run: |
+          # electron-builder treats an empty CSC_LINK as a path (the cwd), so
+          # only export signing variables that are actually set.
+          if [[ -n "$SIGNING_CERT" ]]; then
+            export CSC_LINK="$SIGNING_CERT" CSC_KEY_PASSWORD="$SIGNING_CERT_PASSWORD"
+          fi
+          pnpm exec electron-builder ${{ matrix.args }} \
+            --publish never \
+            -c.extraMetadata.version=${{ steps.version.outputs.version }}
 
       - uses: actions/upload-artifact@v7
         with:
