@@ -49,10 +49,27 @@ It opens PDFs too (e.g. from Beamer or Keynote), with the same presenter view.
 | macOS (Apple silicon) | [`Webdeck-mac-arm64.dmg`](https://github.com/wgoodall01/webdeck/releases/latest/download/Webdeck-mac-arm64.dmg): drag to Applications | [`.app` as a zip](https://github.com/wgoodall01/webdeck/releases/latest/download/Webdeck-mac-arm64.zip)                           |
 | Windows (x64)         | [`Webdeck-win-x64.msi`](https://github.com/wgoodall01/webdeck/releases/latest/download/Webdeck-win-x64.msi)                           | [Portable `.exe`](https://github.com/wgoodall01/webdeck/releases/latest/download/Webdeck-win-x64-portable.exe), no install needed |
 
-The builds aren't notarized or code-signed yet, so the first launch needs one extra step:
+On macOS, the quickest install skips the Gatekeeper prompt entirely:
 
-- **macOS:** right-click Webdeck in Applications → **Open**, then confirm. Or run
-  `xattr -dr com.apple.quarantine /Applications/Webdeck.app`.
+```sh
+curl -fsSL https://raw.githubusercontent.com/wgoodall01/webdeck/main/scripts/install.sh | sh
+```
+
+Or with Homebrew (this repo is also a tap):
+
+```sh
+brew tap wgoodall01/webdeck https://github.com/wgoodall01/webdeck
+brew install --cask wgoodall01/webdeck/webdeck
+```
+
+Upgrade with `brew upgrade --cask --greedy webdeck`, or by re-running the install script.
+
+The builds aren't notarized (macOS) or code-signed (Windows), so if you install from the
+`.dmg`/`.zip` or `.msi`/`.exe` downloaded in a browser, the first launch needs one extra step:
+
+- **macOS:** run `xattr -dr com.apple.quarantine /Applications/Webdeck.app` once. Or open Webdeck,
+  dismiss the warning, then go to **System Settings → Privacy & Security** and click **Open Anyway**
+  (on macOS 14 and earlier, right-click the app → **Open** also works).
 - **Windows:** if SmartScreen appears, click **More info → Run anyway**.
 
 ## Using it
@@ -246,6 +263,12 @@ lit across open and resize, and quits.
 - **Signing.** macOS builds are ad-hoc signed with the entitlements Electron needs under the hardened
   runtime. To sign with a Developer ID, add `CSC_LINK`/`CSC_KEY_PASSWORD` repo secrets, set
   `mac.identity` in `electron-builder.yml`, and add notarization.
+
+- **Install paths.** `scripts/install.sh` and the Homebrew cask (`Casks/webdeck.rb`) both fetch the
+  zipped `.app` from `releases/latest/download/`, so neither needs updating per release. The script
+  avoids Gatekeeper because curl doesn't quarantine what it downloads; the cask removes Homebrew's
+  quarantine flag in a `postflight`. The cask is `version :latest`, which is why upgrades need
+  `--greedy`.
 
 ### Packaging notes
 
