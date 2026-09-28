@@ -18,12 +18,11 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "check": "pnpm typecheck && pnpm lint && pnpm format:check && pnpm test",
-    "dist:mac": "pnpm build && electron-builder --mac --arm64",
-    "dist:win": "pnpm build && electron-builder --win --x64",
-    "dist": "pnpm build && electron-builder --mac --arm64 && electron-builder --win --x64",
+    "dist:mac": "pnpm build && electron-builder --mac --arm64 --publish never",
+    "dist:win": "pnpm build && electron-builder --win --x64 --publish never",
     "start": "electron .",
     "smoke": "pnpm build && WEBDECK_SMOKE=out/smoke electron .",
-    "dist:win:zip": "pnpm build && electron-builder --win zip --x64"
+    "dist:win:zip": "pnpm build && electron-builder --win zip --x64 --publish never"
   },
   "dependencies": {
     "yauzl": "^3.4.0"
@@ -63,5 +62,9 @@
     "vite": "^8.3.1",
     "vitest": "^5.0.2"
   },
+  "engines": {
+    "node": ">=26"
+  },
+  "packageManager": "pnpm@11.17.0",
   "productName": "Webdeck"
 }

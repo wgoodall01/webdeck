@@ -20,7 +20,7 @@ pnpm install
 pnpm dev                 # electron-vite + TanStack Start dev server
 pnpm check               # typecheck, oxlint, oxfmt --check, vitest
 pnpm dist:mac            # arm64 .dmg/.zip → dist/
-pnpm dist:win            # x64 .zip + NSIS installer → dist/ (see packaging notes)
+pnpm dist:win            # x64 portable .exe + .msi → dist/ (needs Windows; see packaging notes)
 pnpm smoke deck.zip      # end-to-end run on the real GPU path; screenshots → out/smoke/
 ```
 
@@ -101,6 +101,31 @@ it zooms so a page exactly fills the viewport, navigates with `viewport_.goToPag
 scrollbars. That's the viewer's internal API, not a public one. It's verified against the Chromium
 in Electron 44, so recheck it when upgrading Electron.
 
+## Releases
+
+- **CI** (`.github/workflows/ci.yml`) runs on every PR and push to `main`: typecheck, oxlint,
+  oxfmt, vitest, and a full build.
+- **Release** (`.github/workflows/release.yml`) runs when you push a `v*` tag:
+
+  ```sh
+  git tag v0.2.0 && git push origin v0.2.0
+  ```
+
+  It builds on native runners and publishes a GitHub release with:
+
+  | Platform    | Files                                                                                   |
+  | ----------- | --------------------------------------------------------------------------------------- |
+  | macOS arm64 | `Webdeck-<v>-mac-arm64.dmg` (drag-to-install), `Webdeck-<v>-mac-arm64.zip` (the `.app`) |
+  | Windows x64 | `Webdeck-<v>-win-x64.msi` (installer), `Webdeck-<v>-win-x64-portable.exe`               |
+
+  The version comes from the tag, so `package.json` doesn't need bumping. Tags with a suffix
+  (`v0.2.0-beta.1`) publish as prereleases. It can also be re-run from the Actions tab for an
+  existing tag.
+
+- macOS builds are **ad-hoc signed**, not notarized, so users right-click → Open the first time. To
+  sign and notarize, add `CSC_LINK`/`CSC_KEY_PASSWORD` secrets, set `mac.identity`, and add the
+  notarization settings.
+
 ## Packaging notes
 
 - `pnpm build` runs `electron-vite build` (main, preloads) and then `vite build -c
@@ -108,6 +133,5 @@ vite.renderer.config.ts`. electron-vite's build runs only a single Vite environm
   Start needs its multi-environment `buildApp` (client plus a prerendered SPA shell).
 - Sandboxed preloads must be single-file CJS, so `electron` is marked external. Otherwise the bundler
   inlines the npm stub, which just returns a path.
-- Windows: the zip target cross-builds from macOS. The NSIS installer needs `makensis`, which
-  electron-builder ships as x86_64 only, so on Apple silicon you need Rosetta, or build on Windows/CI.
-- Builds are unsigned (`mac.identity: null`). Set `CSC_LINK`/`CSC_KEY_PASSWORD` to sign.
+- Windows: the portable `.exe` and the `.msi` need NSIS and WiX, so they're built on Windows in CI.
+  `pnpm dist:win:zip` cross-builds a plain zip from any OS.

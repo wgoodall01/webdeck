@@ -1,0 +1,122 @@
+name: Release
+
+# Push a tag like `v0.2.0` to build and publish a release. The version baked
+# into the app and the artifact names comes from the tag, not package.json.
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing tag to (re)build and publish, e.g. v0.2.0
+        required: true
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ inputs.tag || github.ref_name }}
+
+env:
+  TAG: ${{ inputs.tag || github.ref_name }}
+
+jobs:
+  build:
+    name: Build (${{ matrix.name }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # macOS arm64: .app (zipped) and a drag-to-install .dmg.
+          - name: macOS arm64
+            os: macos-latest
+            args: --mac dmg zip --arm64
+            files: |
+              dist/*.dmg
+              dist/*-mac-*.zip
+          # Windows x64: portable .exe and an .msi installer (NSIS and WiX
+          # both need a Windows host).
+          - name: Windows x64
+            os: windows-latest
+            args: --win portable msi --x64
+            files: |
+              dist/*.exe
+              dist/*.msi
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ env.TAG }}
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Version from tag
+        id: version
+        shell: bash
+        run: |
+          version="${TAG#v}"
+          if ! [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
+            echo "::error::Tag '$TAG' isn't a semver tag like v1.2.3"
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - run: pnpm build
+
+      - name: Package
+        shell: bash
+        env:
+          # Optional Developer ID signing: add these as repo secrets and set
+          # mac.identity accordingly. Without them the app is ad-hoc signed.
+          CSC_LINK: ${{ secrets.CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+        run: >
+          pnpm exec electron-builder ${{ matrix.args }}
+          --publish never
+          -c.extraMetadata.version=${{ steps.version.outputs.version }}
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: webdeck-${{ runner.os }}
+          path: ${{ matrix.files }}
+          if-no-files-found: error
+
+  publish:
+    name: Publish release
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - run: ls -la artifacts
+
+      - name: Create or update the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          if ! gh release view "$TAG" >/dev/null 2>&1; then
+            flags=(--verify-tag --generate-notes --title "Webdeck $TAG" --notes-file -)
+            [[ "$TAG" == *-* ]] && flags+=(--prerelease)
+            gh release create "$TAG" "${flags[@]}" <<'NOTES'
+          ### Install
+
+          - **macOS (Apple silicon):** open the `.dmg` and drag Webdeck to Applications. The app is
+            ad-hoc signed, not notarized: the first time, right-click it → **Open** (or run
+            `xattr -dr com.apple.quarantine /Applications/Webdeck.app`).
+          - **Windows (x64):** run the `.msi` to install, or the `-portable.exe` to run without
+            installing. SmartScreen may warn on first launch (**More info → Run anyway**).
+          NOTES
+          fi
+          gh release upload "$TAG" artifacts/* --clobber

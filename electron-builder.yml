@@ -28,26 +28,50 @@ fileAssociations:
 
 mac:
   target:
+    # Drag-to-install disk image, plus the bare .app zipped.
     - target: dmg
       arch: [arm64]
     - target: zip
       arch: [arm64]
   category: public.app-category.productivity
   hardenedRuntime: true
-  # Unsigned local builds; set CSC_LINK / CSC_KEY_PASSWORD to sign.
-  identity: null
+  entitlements: build/entitlements.mac.plist
+  entitlementsInherit: build/entitlements.mac.plist
+  # Ad-hoc signed by default: Apple silicon refuses to run a modified,
+  # unsigned app at all. Set CSC_LINK / CSC_KEY_PASSWORD (and override
+  # identity) to sign with a Developer ID instead.
+  identity: "-"
+  artifactName: ${productName}-${version}-mac-${arch}.${ext}
+
+dmg:
+  # The standard drag-to-Applications window.
+  contents:
+    - x: 140
+      y: 190
+    - x: 400
+      y: 190
+      type: link
+      path: /Applications
+  window:
+    width: 540
+    height: 380
 
 win:
+  # Windows: a portable .exe (runs without installing) and an .msi installer.
+  # Both need Windows tooling (NSIS, WiX); build them on Windows or in CI.
+  # `pnpm dist:win:zip` cross-builds a plain zip from anywhere.
   target:
-    # The zip cross-builds anywhere. The NSIS installer needs makensis, which
-    # electron-builder ships as x86_64 only: on Apple silicon that means
-    # Rosetta (or build on Windows/CI).
-    - target: zip
+    - target: portable
       arch: [x64]
-    - target: nsis
+    - target: msi
       arch: [x64]
 
-nsis:
+portable:
+  artifactName: ${productName}-${version}-win-${arch}-portable.${ext}
+
+msi:
+  artifactName: ${productName}-${version}-win-${arch}.${ext}
   oneClick: false
   perMachine: false
-  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
