@@ -49,10 +49,27 @@ It opens PDFs too (e.g. from Beamer or Keynote), with the same presenter view.
 | macOS (Apple silicon) | [`Webdeck-mac-arm64.dmg`](https://github.com/wgoodall01/webdeck/releases/latest/download/Webdeck-mac-arm64.dmg): drag to Applications | [`.app` as a zip](https://github.com/wgoodall01/webdeck/releases/latest/download/Webdeck-mac-arm64.zip)                           |
 | Windows (x64)         | [`Webdeck-win-x64.msi`](https://github.com/wgoodall01/webdeck/releases/latest/download/Webdeck-win-x64.msi)                           | [Portable `.exe`](https://github.com/wgoodall01/webdeck/releases/latest/download/Webdeck-win-x64-portable.exe), no install needed |
 
-The builds aren't notarized or code-signed yet, so the first launch needs one extra step:
+On macOS, the quickest install skips the Gatekeeper prompt entirely:
 
-- **macOS:** right-click Webdeck in Applications → **Open**, then confirm. Or run
-  `xattr -dr com.apple.quarantine /Applications/Webdeck.app`.
+```sh
+curl -fsSL https://raw.githubusercontent.com/wgoodall01/webdeck/main/scripts/install.sh | sh
+```
+
+Or with Homebrew (this repo is also a tap):
+
+```sh
+brew tap wgoodall01/webdeck https://github.com/wgoodall01/webdeck
+brew install --cask wgoodall01/webdeck/webdeck
+```
+
+Upgrade with `brew upgrade webdeck`, or by re-running the install script.
+
+The builds aren't notarized (macOS) or code-signed (Windows), so if you install from the
+`.dmg`/`.zip` or `.msi`/`.exe` downloaded in a browser, the first launch needs one extra step:
+
+- **macOS:** run `xattr -dr com.apple.quarantine /Applications/Webdeck.app` once. Or open Webdeck,
+  dismiss the warning, then go to **System Settings → Privacy & Security** and click **Open Anyway**
+  (on macOS 14 and earlier, right-click the app → **Open** also works).
 - **Windows:** if SmartScreen appears, click **More info → Run anyway**.
 
 ## Using it
@@ -231,21 +248,30 @@ lit across open and resize, and quits.
 
 - **CI** (`.github/workflows/ci.yml`) runs on every PR and push to `main`: typecheck, oxlint,
   oxfmt, vitest, and a full build.
-- **Release** (`.github/workflows/release.yml`) runs when you push a `v*` tag:
+- **Release** (`.github/workflows/release.yml`) runs when you push a `v*` tag. Cut one from a clean
+  `main` with:
 
   ```sh
-  git tag -a v0.2.0 -m "Webdeck v0.2.0" && git push origin v0.2.0
+  pnpm release v0.2.0                     # bumps versions, commits "Release 0.2.0", tags v0.2.0
+  git push --atomic origin main v0.2.0    # it prints this; pushing the tag starts the build
   ```
 
   It builds on native runners (macOS arm64, Windows x64) and publishes a GitHub release with the
   `.dmg`, the zipped `.app`, the `.msi`, and the portable `.exe`. File names don't include the version,
   so the `releases/latest/download/…` links above always point at the newest build. The version
-  comes from the tag (`package.json` needn't be bumped), and suffixed tags like `v0.2.0-beta.1`
+  comes from the tag (`pnpm release` also writes it into `package.json`), and suffixed tags like `v0.2.0-beta.1`
   publish as prereleases. You can also re-run it for an existing tag from the Actions tab.
 
 - **Signing.** macOS builds are ad-hoc signed with the entitlements Electron needs under the hardened
   runtime. To sign with a Developer ID, add `CSC_LINK`/`CSC_KEY_PASSWORD` repo secrets, set
   `mac.identity` in `electron-builder.yml`, and add notarization.
+
+- **Install paths.** `scripts/install.sh` and the Homebrew cask (`Casks/webdeck.rb`) both fetch the
+  zipped `.app`. The script always takes `releases/latest/download/`; the cask pins the release's
+  version, which `pnpm release` bumps, and skips the checksum since the zip is built after the tag.
+  Until CI finishes, `brew upgrade` for the new version 404s. The script avoids Gatekeeper because
+  curl doesn't quarantine what it downloads; the cask removes Homebrew's quarantine flag in a
+  `postflight`.
 
 ### Packaging notes
 

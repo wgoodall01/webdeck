@@ -117,9 +117,12 @@ jobs:
             gh release create "$TAG" "${flags[@]}" <<'NOTES'
           ### Install
 
-          - **macOS (Apple silicon):** open the `.dmg` and drag Webdeck to Applications. The app is
-            ad-hoc signed, not notarized: the first time, right-click it → **Open** (or run
-            `xattr -dr com.apple.quarantine /Applications/Webdeck.app`).
+          - **macOS (Apple silicon):** run
+            `curl -fsSL https://raw.githubusercontent.com/wgoodall01/webdeck/main/scripts/install.sh | sh`,
+            or `brew tap wgoodall01/webdeck https://github.com/wgoodall01/webdeck && brew install --cask wgoodall01/webdeck/webdeck`.
+            Or open the `.dmg` and drag Webdeck to Applications. The app isn't notarized, so a
+            browser download needs `xattr -dr com.apple.quarantine /Applications/Webdeck.app` once
+            (or **System Settings → Privacy & Security → Open Anyway** after the first launch attempt).
           - **Windows (x64):** run the `.msi` to install, or the `-portable.exe` to run without
             installing. SmartScreen may warn on first launch (**More info → Run anyway**).
           NOTES

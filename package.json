@@ -22,7 +22,8 @@
     "dist:win": "pnpm build && electron-builder --win --x64 --publish never",
     "start": "electron .",
     "smoke": "pnpm build && WEBDECK_SMOKE=out/smoke electron .",
-    "dist:win:zip": "pnpm build && electron-builder --win zip --x64 --publish never"
+    "dist:win:zip": "pnpm build && electron-builder --win zip --x64 --publish never",
+    "release": "node scripts/release.mjs"
   },
   "dependencies": {
     "yauzl": "^3.4.0"
